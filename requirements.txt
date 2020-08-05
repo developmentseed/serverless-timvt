@@ -1,0 +1,3 @@
+mangum>=0.9.0
+
+https://github.com/developmentseed/timvt/archive/53cca92.tar.gz#egg=timvt

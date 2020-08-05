@@ -1,0 +1,73 @@
+service: serverless-timvt
+
+custom:
+  deploymentbucket: ${opt:bucket}
+  stackFullName: ${self:service}-${self:provider.stage}-${self:provider.region}
+  RDS:
+    DB_NAME: postgis${self:provider.stage}
+    USERNAME: 'postgres'
+    PASSWORD: 'popstgres123'
+    HOST: !GetAtt RDSCluster.Endpoint.Address
+    PORT: !GetAtt RDSCluster.Endpoint.Port
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: ${opt:stage, 'production'}
+  region: ${opt:region, 'us-east-1'}
+  deploymentBucket: ${self:custom.deploymentbucket}
+
+  stackTags:
+    Project: labs
+    Owner: vincents
+
+  httpApi:
+    cors: true
+
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'
+    minimumCompressionSize: 1
+
+package:
+  artifact: package.zip
+
+functions:
+  tiler:
+    handler: app.handler.handler
+    memorySize: 2048
+    timeout: 10
+    layers:
+      - arn:aws:lambda:${self:provider.region}:524387336408:layer:gdal24-py37-geolayer:1
+    environment:
+      CPL_TMPDIR: /tmp
+      GDAL_CACHEMAX: 25%
+      GDAL_DATA: /opt/share/gdal
+      GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
+      GDAL_HTTP_MERGE_CONSECUTIVE_RANGES: YES
+      GDAL_HTTP_MULTIPLEX: YES
+      GDAL_HTTP_VERSION: '2'
+      PROJ_LIB: /opt/share/proj
+      PYTHONWARNINGS: ignore
+      VSI_CACHE: TRUE
+      VSI_CACHE_SIZE: '536870912'
+      POSTGRES_HOST: ${self:custom.RDS.HOST}
+      POSTGRES_PORT: ${self:custom.RDS.PORT}
+      POSTGRES_DBNAME: ${self:custom.RDS.DB_NAME}
+      POSTGRES_USER: ${self:custom.RDS.USERNAME}
+      POSTGRES_PASS: ${self:custom.RDS.PASSWORD}
+
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: true
+    vpc:
+      securityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      subnetIds:
+        - Ref: Subnet1
+        - Ref: Subnet2
+
+resources:
+  - ${file(./resources/db.yml)}
