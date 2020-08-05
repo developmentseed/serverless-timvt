@@ -56,18 +56,16 @@ functions:
       POSTGRES_DBNAME: ${self:custom.RDS.DB_NAME}
       POSTGRES_USER: ${self:custom.RDS.USERNAME}
       POSTGRES_PASS: ${self:custom.RDS.PASSWORD}
-
-    events:
-      - http:
-          path: /{proxy+}
-          method: any
-          cors: true
     vpc:
       securityGroupIds:
         - !GetAtt SecurityGroup.GroupId
       subnetIds:
         - Ref: Subnet1
         - Ref: Subnet2
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: '*'
 
 resources:
   - ${file(./resources/db.yml)}

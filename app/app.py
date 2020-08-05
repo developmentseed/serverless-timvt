@@ -6,9 +6,10 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from timvt import settings, version
-from timvt.db.catalog import table_index
 from timvt.db.events import close_db_connection, connect_to_db
 from timvt.endpoints import health, tiles
+
+from .catalog import table_index
 
 logger = logging.getLogger(__name__)
 
